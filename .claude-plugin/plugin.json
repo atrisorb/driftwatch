@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "Keeps you (and any LLM) proactively aware of changelogs and breaking changes for the platforms/SDKs your project depends on, and checks whether they actually affect your codebase.",
   "author": {
-    "name": "driftwatch contributors"
+    "name": "atrisorb"
   },
   "license": "MIT",
   "keywords": ["changelog", "breaking-changes", "dependencies", "mcp"]
