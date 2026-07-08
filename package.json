@@ -13,5 +13,6 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "author": "atrisorb"
 }
