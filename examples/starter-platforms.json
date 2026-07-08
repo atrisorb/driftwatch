@@ -1,0 +1,9 @@
+[
+  { "name": "Anthropic Python SDK", "url": "anthropics/anthropic-sdk-python", "type": "feed", "detect": ["anthropic"] },
+  { "name": "Anthropic TypeScript SDK", "url": "anthropics/anthropic-sdk-typescript", "type": "feed", "detect": ["@anthropic-ai/sdk"] },
+  { "name": "OpenAI Python SDK", "url": "openai/openai-python", "type": "feed", "detect": ["openai"] },
+  { "name": "OpenAI Node SDK", "url": "openai/openai-node", "type": "feed", "detect": ["openai"] },
+  { "name": "Node.js", "url": "nodejs/node", "type": "feed", "detect": ["node"] },
+  { "name": "Next.js", "url": "vercel/next.js", "type": "feed", "detect": ["next"] },
+  { "name": "TypeScript", "url": "microsoft/TypeScript", "type": "feed", "detect": ["typescript"] }
+]

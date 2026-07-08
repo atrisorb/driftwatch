@@ -1,0 +1,13 @@
+{
+  "name": "driftwatch-marketplace",
+  "owner": {
+    "name": "driftwatch contributors"
+  },
+  "plugins": [
+    {
+      "name": "driftwatch",
+      "source": "./",
+      "description": "Proactive changelog/breaking-change tracking for your dependencies, with codebase impact checks."
+    }
+  ]
+}

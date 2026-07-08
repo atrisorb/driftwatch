@@ -1,0 +1,154 @@
+#!/usr/bin/env node
+'use strict';
+
+const path = require('path');
+const fs = require('fs');
+const store = require('../lib/store');
+const check = require('../lib/check');
+const digest = require('../lib/digest');
+const impact = require('../lib/impact');
+const testRunner = require('../lib/testRunner');
+const { TYPES } = require('../lib/fetchers');
+
+function parseFlags(argv) {
+  const flags = {};
+  const positional = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a.startsWith('--')) {
+      const key = a.slice(2);
+      const next = argv[i + 1];
+      if (next === undefined || next.startsWith('--')) flags[key] = true;
+      else {
+        flags[key] = next;
+        i++;
+      }
+    } else positional.push(a);
+  }
+  return { flags, positional };
+}
+
+function print(obj) {
+  console.log(typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2));
+}
+
+async function main() {
+  const [, , cmd, ...rest] = process.argv;
+  const { flags, positional } = parseFlags(rest);
+
+  switch (cmd) {
+    case 'list': {
+      const platforms = store.getPlatforms();
+      const entries = store.getEntries();
+      print(platforms.map((p) => ({ ...p, cachedEntries: entries.filter((e) => e.platformId === p.id).length })));
+      break;
+    }
+
+    case 'add': {
+      const [name, url] = positional;
+      if (!name || !url || !flags.type) {
+        console.error('usage: driftwatch add <name> <url> --type feed|npm|pypi|url_watch [--detect dep1,dep2]');
+        process.exit(1);
+      }
+      if (!TYPES.includes(flags.type)) {
+        console.error(`--type must be one of: ${TYPES.join(', ')}`);
+        process.exit(1);
+      }
+      const id = store.makePlatformId(name, url);
+      const detect = flags.detect ? String(flags.detect).split(',').map((s) => s.trim()).filter(Boolean) : [];
+      store.upsertPlatform({ id, name, url, type: flags.type, detect });
+      const result = await check.checkPlatform(store.getPlatform(id), { force: true });
+      print({ platform: store.getPlatform(id), initialFetch: result });
+      break;
+    }
+
+    case 'remove': {
+      const [id] = positional;
+      if (!id) {
+        console.error('usage: driftwatch remove <id>');
+        process.exit(1);
+      }
+      store.removePlatform(id);
+      print({ removed: id });
+      break;
+    }
+
+    case 'check': {
+      if (flags.platform) {
+        const platform = store.getPlatform(flags.platform);
+        if (!platform) {
+          console.error(`unknown platform: ${flags.platform}`);
+          process.exit(1);
+        }
+        print({ [flags.platform]: await check.checkPlatform(platform, { force: !!flags.force }) });
+      } else {
+        print(await check.checkAll({ force: !!flags.force }));
+      }
+      break;
+    }
+
+    case 'digest': {
+      print(digest.buildDigest({ projectPath: flags.project, maxItems: flags.max ? Number(flags.max) : undefined }));
+      break;
+    }
+
+    case 'assess': {
+      const [entryId] = positional;
+      if (!entryId) {
+        console.error('usage: driftwatch assess <entryId> [--project path] [--context "what you\'re doing"] [--run-tests]');
+        process.exit(1);
+      }
+      const entry = store.getEntry(entryId);
+      if (!entry) {
+        console.error(`unknown entry: ${entryId}`);
+        process.exit(1);
+      }
+      const platform = store.getPlatform(entry.platformId);
+      const assessment = impact.assessImpact(entry, platform, flags.project, flags.context);
+      let testResult = null;
+      if (flags['run-tests']) {
+        const focusPaths = Array.from(new Set(assessment.references.map((r) => r.file)));
+        testResult = await testRunner.runCommand(flags.project, { focusPaths });
+      }
+      print({ entry, ...assessment, testResult });
+      break;
+    }
+
+    case 'import': {
+      const [file] = positional;
+      if (!file) {
+        console.error('usage: driftwatch import <platforms.json>');
+        process.exit(1);
+      }
+      const list = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
+      const added = [];
+      for (const p of list) {
+        const id = store.makePlatformId(p.name, p.url);
+        store.upsertPlatform({ id, name: p.name, url: p.url, type: p.type, detect: p.detect || [] });
+        added.push(id);
+      }
+      print({ imported: added });
+      break;
+    }
+
+    default:
+      console.log(
+        [
+          'driftwatch <command>',
+          '',
+          '  list                                    list tracked platforms',
+          '  add <name> <url> --type <t> [--detect a,b]  subscribe to a platform',
+          '  remove <id>                             unsubscribe',
+          '  check [--platform id] [--force]         refresh cached entries',
+          '  digest [--project path] [--max N]       relevant-updates digest for a project',
+          '  assess <entryId> [--project path] [--context "..."] [--run-tests]  impact check for one entry',
+          '  import <platforms.json>                 bulk-subscribe from a file',
+        ].join('\n')
+      );
+  }
+}
+
+main().catch((err) => {
+  console.error(err.stack || err.message);
+  process.exit(1);
+});

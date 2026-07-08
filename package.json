@@ -1,0 +1,17 @@
+{
+  "name": "driftwatch",
+  "version": "0.1.0",
+  "description": "Proactive changelog/breaking-change tracker for LLM coding sessions",
+  "type": "commonjs",
+  "main": "lib/index.js",
+  "bin": {
+    "driftwatch": "bin/driftwatch"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "license": "MIT"
+}

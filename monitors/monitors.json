@@ -1,0 +1,8 @@
+[
+  {
+    "name": "driftwatch-poll",
+    "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/watch.js\"",
+    "description": "Polls tracked platform changelogs and surfaces relevant breaking changes as they appear",
+    "when": "always"
+  }
+]
